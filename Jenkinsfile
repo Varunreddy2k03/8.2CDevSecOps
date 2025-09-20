@@ -1,6 +1,11 @@
 pipeline {
   agent any
 
+  environment {
+    // change this to your email (comma-separated if multiple)
+    EMAIL_RECIPIENTS = 'your.email@example.com'
+  }
+
   stages {
     stage('Checkout') {
       steps {
@@ -40,9 +45,27 @@ pipeline {
 
   post {
     always {
+      // archive artifacts so they're preserved in the build and also attachable
       archiveArtifacts artifacts: 'audit.json, npm-audit.err', fingerprint: true
       echo 'Finished — artifacts archived.'
+
+      // send summary email with attachments
+      script {
+        // currentBuild.currentResult will be set to SUCCESS/FAILURE/etc.
+        def status = currentBuild.currentResult ?: 'SUCCESS'
+        emailext(
+          subject: "${status}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+          body: """<p><b>Job</b>: ${env.JOB_NAME} #${env.BUILD_NUMBER}</p>
+                   <p><b>Status</b>: ${status}</p>
+                   <p><b>Build URL</b>: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>
+                   <p>Attached: <code>audit.json</code> and <code>npm-audit.err</code> (if present).</p>""",
+          to: "${EMAIL_RECIPIENTS}",
+          attachmentsPattern: 'audit.json,npm-audit.err',
+          mimeType: 'text/html'
+        )
+      }
     }
+
     failure {
       echo 'Pipeline failed (see audit.json / npm-audit.err for details).'
     }
@@ -50,4 +73,5 @@ pipeline {
       echo 'Pipeline succeeded.'
     }
   }
+
 }
