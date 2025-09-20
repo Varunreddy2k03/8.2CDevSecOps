@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     // change this to your email (comma-separated if multiple)
-    EMAIL_RECIPIENTS = 'your.email@example.com'
+    EMAIL_RECIPIENTS = 'varunreddy2003@gmail.com'
   }
 
   stages {
